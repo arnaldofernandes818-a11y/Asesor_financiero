@@ -60,9 +60,10 @@ def posicionar_sistema(hora):
     Thread(target=analizar_impacto_real, args=(p_eur, p_oro, hora)).start()
 
 def iniciar_cronograma():
+    # 1. Apertura de Londres
     schedule.every().day.at("02:00").do(enviar_telegram, "🌍 **LONDRES:** Vigilancia institucional activa.")
     
-    # HORAS DE NOTICIAS: Ajusta estas según tu calendario
+    # 2. LISTA DE NOTICIAS (Ajusta estas horas cada mañana)
     noticias = ["08:31", "10:01", "14:31"] 
     
     for hora in noticias:
@@ -71,11 +72,13 @@ def iniciar_cronograma():
         schedule.every().day.at(t_pos).do(posicionar_sistema, hora)
         
         t_aviso = (hora_dt - timedelta(minutes=10)).strftime("%H:%M")
-        schedule.every().day.at(t_pre).do(enviar_telegram, f"⚠️ **AVISO:** 10 min para noticia de las {hora}.")
+        schedule.every().day.at(t_aviso).do(enviar_telegram, f"⚠️ **AVISO:** 10 min para noticia de las {hora}.")
 
 if __name__ == "__main__":
+    # Iniciar servidor web y cronograma
     Thread(target=run_web_server).start()
     iniciar_cronograma()
     while True:
         schedule.run_pending()
         time.sleep(30)
+        
