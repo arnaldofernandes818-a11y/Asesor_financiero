@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from flask import Flask
 from threading import Thread
 
-# --- CONFIGURACIÓN DE ACCESO ---
+# --- CONFIGURACIÓN INSTITUCIONAL ---
 TOKEN = "8138438253:AAGgdSgL67Kt1a0gEcm5NqYedsHKsa9UjN0"
 CHAT_ID = "7100105540"
 COLOMBIA_TZ = pytz.timezone('America/Bogota')
@@ -15,7 +15,7 @@ app = Flask('')
 
 @app.route('/')
 def home():
-    return "Lacer Cloud Intelligence Online"
+    return "Lacer Cloud Intelligence - Active Terminal"
 
 def run_web_server():
     app.run(host='0.0.0.0', port=8080)
@@ -37,7 +37,6 @@ def obtener_precios():
         return None, None
 
 def analizar_impacto_real(p_base_eur, p_base_oro, hora_noticia):
-    # Espera 2 minutos para ver la reacción real del mercado
     time.sleep(120) 
     p_final_eur, p_final_oro = obtener_precios()
     
@@ -45,53 +44,48 @@ def analizar_impacto_real(p_base_eur, p_base_oro, hora_noticia):
         var_eur = ((p_final_eur - p_base_eur) / p_base_eur) * 100
         var_oro = ((p_final_oro - p_base_oro) / p_base_oro) * 100
         
-        v_eur = "🟢 FORTALECIMIENTO" if var_eur > 0.02 else "🔴 DEBILITAMIENTO" if var_eur < -0.02 else "⚖️ NEUTRO"
-        v_oro = "🟢 FORTALECIMIENTO" if var_oro > 0.05 else "🔴 DEBILITAMIENTO" if var_oro < -0.05 else "⚖️ NEUTRO"
+        v_eur = "🔹 ALCISTA" if var_eur > 0.02 else "🔸 BAJISTA" if var_eur < -0.02 else "⚖️ LATERAL"
+        v_oro = "🔹 ALCISTA" if var_oro > 0.05 else "🔸 BAJISTA" if var_oro < -0.05 else "⚖️ LATERAL"
 
         mensaje = (
-            f"🏛️ **VEREDICTO POST-NOTICIA**\n"
-            f"⏱️ Evento: {hora_noticia} (Hora COL)\n"
+            f"🏛️ **LACER CLOUD INTELLIGENCE**\n"
+            f"📊 **INFORME DE VOLATILIDAD**\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🇪🇺 **EURUSD:** {v_eur} ({var_eur:+.4f}%)\n"
-            f"🏆 **XAUUSD:** {v_oro} ({var_oro:+.4f}%)\n"
+            f"⏱️ **Evento:** {hora_noticia}\n"
+            f"🌍 **Impacto EURUSD:** {v_eur} ({var_eur:+.4f}%)\n"
+            f"🏆 **Impacto XAUUSD:** {v_oro} ({var_oro:+.4f}%)\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🧠 *Análisis de flujo de órdenes completado.*"
+            f"🧠 *Veredicto de flujo institucional completado.*"
         )
         enviar_telegram(mensaje)
 
 def posicionar_sistema(hora):
     p_eur, p_oro = obtener_precios()
-    enviar_telegram(f"⚖️ **SISTEMA EN POSICIÓN**\nCapturando métricas pre-noticia ({hora} Hora COL)...")
+    enviar_telegram(f"⚖️ **SISTEMA EN POSICIÓN**\nCapturando métricas para la noticia de las {hora}...")
     Thread(target=analizar_impacto_real, args=(p_eur, p_oro, hora)).start()
 
 def iniciar_cronograma():
-    # 1. Mensaje de inicio de sesión de Londres (2:00 AM Colombia)
-    schedule.every().day.at("02:00").do(enviar_telegram, "🌍 **LONDRES:** Vigilancia institucional activa.")
+    schedule.every().day.at("02:00").do(enviar_telegram, "🌍 **LONDRES:** Apertura detectada. Vigilancia institucional activa.")
     
-    # 2. LISTA DE NOTICIAS (Estas son HORAS DE COLOMBIA)
-    # He puesto la de las 06:40 para que te llegue pronto como prueba
-    noticias = ["06:40", "08:31", "10:01", "14:31"] 
+    # --- CAMBIA LAS HORAS AQUÍ (SOLO UNA VEZ) ---
+    noticias = ["07:00", "08:30", "13:00"] 
     
     for hora in noticias:
-        # Programar el posicionamiento 1 minuto antes de la noticia
         hora_dt = datetime.strptime(hora, "%H:%M")
+        
+        # El bot calcula automáticamente el aviso de 5 min antes
+        t_aviso = (hora_dt - timedelta(minutes=5)).strftime("%H:%M")
+        schedule.every().day.at(t_aviso).do(enviar_telegram, f"⚠️ **AVISO PROFESIONAL:** 5 minutos para noticia de las {hora}.")
+        
+        # El bot calcula automáticamente el posicionamiento 1 min antes
         t_pos = (hora_dt - timedelta(minutes=1)).strftime("%H:%M")
         schedule.every().day.at(t_pos).do(posicionar_sistema, hora)
-        
-        # Programar aviso 10 minutos antes
-        t_aviso = (hora_dt - timedelta(minutes=10)).strftime("%H:%M")
-        schedule.every().day.at(t_aviso).do(enviar_telegram, f"⚠️ **AVISO:** 10 min para noticia de las {hora}.")
 
 if __name__ == "__main__":
-    # Iniciar servidor web y avisar que el bot prendió
     Thread(target=run_web_server).start()
-    enviar_telegram("🚀 **SISTEMA LACER CONECTADO**\nEl bot está en línea y sincronizado con Maicao, Colombia.")
-    
+    enviar_telegram("🏛️ **LACER CLOUD INTELLIGENCE**\n✅ Terminal operativo. Gestión de noticias sincronizada.")
     iniciar_cronograma()
     
     while True:
-        # Usar la zona horaria de Colombia para el reloj interno
-        ahora_col = datetime.now(COLOMBIA_TZ)
         schedule.run_pending()
         time.sleep(30)
-        
