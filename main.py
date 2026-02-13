@@ -64,7 +64,7 @@ def iniciar_cronograma():
     schedule.every().day.at("02:00").do(enviar_telegram, "🌍 **LONDRES:** Vigilancia institucional activa.")
     
     # 2. LISTA DE NOTICIAS (Ajusta estas horas cada mañana)
-    noticias = ["08:31", "10:01", "14:31"] 
+    noticias = ["08:31", "10:01", "21:05"] 
     
     for hora in noticias:
         hora_dt = datetime.strptime(hora, "%H:%M")
