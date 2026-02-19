@@ -1,24 +1,28 @@
 import requests
 import schedule
 import time
-import pytz
+import os
 from datetime import datetime, timedelta
-from flask import Flask
 from threading import Thread
+from flask import Flask
 
-# --- CONFIGURACIÓN INSTITUCIONAL ---
+# ==========================================
+# CONFIGURACIÓN DE CONECTIVIDAD
+# ==========================================
 TOKEN = "8138438253:AAGgdSgL67Kt1a0gEcm5NqYedsHKsa9UjN0"
 CHAT_ID = "7100105540"
-COLOMBIA_TZ = pytz.timezone('America/Bogota')
 
-app = Flask('')
+# --- BLOQUE DE COMPATIBILIDAD CON RENDER ---
+app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Lacer Cloud Intelligence - Active Terminal"
+    return "🏛️ LACER DUAL INTELLIGENCE: ACTIVO"
 
 def run_web_server():
-    app.run(host='0.0.0.0', port=8080)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
+# -------------------------------------------
 
 def enviar_telegram(mensaje):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
@@ -26,7 +30,7 @@ def enviar_telegram(mensaje):
     try:
         requests.post(url, data=payload)
     except:
-        pass
+        print("Error: Revisa tu conexión a internet.")
 
 def obtener_precios():
     try:
@@ -36,56 +40,60 @@ def obtener_precios():
     except:
         return None, None
 
-def analizar_impacto_real(p_base_eur, p_base_oro, hora_noticia):
+def ejecutar_analisis_latigazo(precio_base_eur, precio_base_oro, hora_evento):
     time.sleep(120) 
-    p_final_eur, p_final_oro = obtener_precios()
+    precio_final_eur, precio_final_oro = obtener_precios()
     
-    if p_final_eur and p_base_eur:
-        var_eur = ((p_final_eur - p_base_eur) / p_base_eur) * 100
-        var_oro = ((p_final_oro - p_base_oro) / p_base_oro) * 100
+    if precio_final_eur and precio_base_eur:
+        var_eur = ((precio_final_eur - precio_base_eur) / precio_base_eur) * 100
+        var_oro = ((precio_final_oro - precio_base_oro) / precio_base_oro) * 100
         
-        v_eur = "🔹 ALCISTA" if var_eur > 0.02 else "🔸 BAJISTA" if var_eur < -0.02 else "⚖️ LATERAL"
-        v_oro = "🔹 ALCISTA" if var_oro > 0.05 else "🔸 BAJISTA" if var_oro < -0.05 else "⚖️ LATERAL"
+        v_eur = "🟢 FORTALECIMIENTO" if var_eur > 0.02 else "🔴 DEBILITAMIENTO" if var_eur < -0.02 else "⚖️ NEUTRO"
+        v_oro = "🟢 FORTALECIMIENTO" if var_oro > 0.05 else "🔴 DEBILITAMIENTO" if var_oro < -0.05 else "⚖️ NEUTRO"
 
         mensaje = (
-            f"🏛️ **LACER CLOUD INTELLIGENCE**\n"
-            f"📊 **INFORME DE VOLATILIDAD**\n"
+            f"🏛️ **VEREDICTO POST-NOTICIA**\n"
+            f"⏱️ Evento: {hora_evento}\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"⏱️ **Evento:** {hora_noticia}\n"
-            f"🌍 **Impacto EURUSD:** {v_eur} ({var_eur:+.4f}%)\n"
-            f"🏆 **Impacto XAUUSD:** {v_oro} ({var_oro:+.4f}%)\n"
+            f"🇪🇺 **EURUSD (Euro)**\n"
+            f"🔸 Impacto: {v_eur}\n"
+            f"🔸 Variación: {var_eur:+.4f}%\n\n"
+            f"🏆 **XAUUSD (Oro)**\n"
+            f"🔸 Impacto: {v_oro}\n"
+            f"🔸 Variación: {var_oro:+.4f}%\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🧠 *Veredicto de flujo institucional completado.*"
+            f"🧠 *Análisis de flujo de órdenes completado.*"
         )
         enviar_telegram(mensaje)
 
-def posicionar_sistema(hora):
+def protocolo_posicionamiento(hora):
     p_eur, p_oro = obtener_precios()
-    enviar_telegram(f"⚖️ **SISTEMA EN POSICIÓN**\nCapturando métricas para la noticia de las {hora}...")
-    Thread(target=analizar_impacto_real, args=(p_eur, p_oro, hora)).start()
+    enviar_telegram(f"⚖️ **SISTEMA EN POSICIÓN**\nSincronizando precios pre-noticia para las {hora}...")
+    Thread(target=ejecutar_analisis_latigazo, args=(p_eur, p_oro, hora)).start()
 
 def iniciar_cronograma():
-    schedule.every().day.at("02:00").do(enviar_telegram, "🌍 **LONDRES:** Apertura detectada. Vigilancia institucional activa.")
-    
-    # --- CAMBIA LAS HORAS AQUÍ (SOLO UNA VEZ) ---
-    noticias = ["07:00", "08:30", "13:00"] 
+    schedule.every().day.at("02:00").do(enviar_telegram, "🌍 **LONDRES SESSION:** Vigilancia de volatilidad institucional activa.")
+
+    noticias = ["08:31", "10:01", "14:31"]
     
     for hora in noticias:
         hora_dt = datetime.strptime(hora, "%H:%M")
-        
-        # El bot calcula automáticamente el aviso de 5 min antes
-        t_aviso = (hora_dt - timedelta(minutes=5)).strftime("%H:%M")
-        schedule.every().day.at(t_aviso).do(enviar_telegram, f"⚠️ **AVISO PROFESIONAL:** 5 minutos para noticia de las {hora}.")
-        
-        # El bot calcula automáticamente el posicionamiento 1 min antes
         t_pos = (hora_dt - timedelta(minutes=1)).strftime("%H:%M")
-        schedule.every().day.at(t_pos).do(posicionar_sistema, hora)
+        schedule.every().day.at(t_pos).do(protocolo_posicionamiento, hora)
+        
+        t_pre = (hora_dt - timedelta(minutes=10)).strftime("%H:%M")
+        schedule.every().day.at(t_pre).do(enviar_telegram, f"⚠️ **NOTICIA PRÓXIMA:** 10 minutos para el evento de las {hora}.")
+
+    print(">>> LACER INTELLIGENCE: DESPLEGADO")
+    enviar_telegram("🏛️ **LACER DUAL INTELLIGENCE**\nSistemas de análisis fundamental y latigazos activos.")
 
 if __name__ == "__main__":
+    # Iniciar servidor web para que Render no mate el proceso
     Thread(target=run_web_server).start()
-    enviar_telegram("🏛️ **LACER CLOUD INTELLIGENCE**\n✅ Terminal operativo. Gestión de noticias sincronizada.")
-    iniciar_cronograma()
     
+    # Iniciar lógica del bot
+    iniciar_cronograma()
     while True:
         schedule.run_pending()
         time.sleep(30)
+        
