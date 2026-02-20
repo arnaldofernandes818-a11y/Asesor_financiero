@@ -16,6 +16,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
+    # Retorno simple para evitar saturación de logs en Render
     return "🏛️ LACER PRO: CENTRAL INTELLIGENCE OPERATIONAL"
 
 def run_web_server():
@@ -31,10 +32,11 @@ def enviar_telegram(mensaje):
         pass
 
 # ==========================================
-# NÚCLEO DE INTELIGENCIA DE DATOS
+# NÚCLEO DE INTELIGENCIA DE DATOS (SIN BLOQUEOS)
 # ==========================================
 
 def obtener_precios():
+    # Captura rápida para asegurar el Punto Cero
     try:
         r_eur = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT", timeout=5).json()
         r_oro = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT", timeout=5).json()
@@ -42,13 +44,8 @@ def obtener_precios():
     except:
         return None, None
 
-def es_horario_bloqueo():
-    # Bloqueo operativo de 5 AM a 7 AM EST para la cuenta, no para el simulador
-    ahora = datetime.now()
-    return 5 <= ahora.hour < 7
-
 def ejecutar_analisis_latigazo(precio_base_eur, precio_base_oro, hora_evento):
-    # ADN de la Estrategia: 120 segundos de espera para confirmar absorción
+    # ADN de la Estrategia: 120 segundos para confirmar la absorción del movimiento
     time.sleep(120) 
     precio_final_eur, precio_final_oro = obtener_precios()
     
@@ -56,7 +53,7 @@ def ejecutar_analisis_latigazo(precio_base_eur, precio_base_oro, hora_evento):
         var_eur = ((precio_final_eur - precio_base_eur) / precio_base_eur) * 100
         var_oro = ((precio_final_oro - precio_base_oro) / precio_base_oro) * 100
         
-        # Lógica de Veredicto Profesional
+        # Veredictos basados en volatilidad institucional
         v_eur = "🔹 EXPANSIÓN ALCISTA" if var_eur > 0.02 else "🔸 DISTRIBUCIÓN BAJISTA" if var_eur < -0.02 else "⚖️ ACUMULACIÓN"
         v_oro = "🔹 EXPANSIÓN ALCISTA" if var_oro > 0.05 else "🔸 DISTRIBUCIÓN BAJISTA" if var_oro < -0.05 else "⚖️ ACUMULACIÓN"
 
@@ -76,37 +73,34 @@ def ejecutar_analisis_latigazo(precio_base_eur, precio_base_oro, hora_evento):
         enviar_telegram(mensaje)
 
 def protocolo_posicionamiento(hora):
-    if es_horario_bloqueo():
-        return # Silencio operativo durante el bloqueo de seguridad
-
+    # Eliminada la restricción de 5-7 AM por orden del usuario
     p_eur, p_oro = obtener_precios()
     
     if p_eur and p_oro:
-        # Confirmación silenciosa de Punto Cero para no saturar el chat
+        # Registro del Punto Cero exitoso
         Thread(target=ejecutar_analisis_latigazo, args=(p_eur, p_oro, hora)).start()
     else:
-        enviar_telegram(f"⚠️ **SISTEMA:** Error de enlace con servidores de datos para el evento de las {hora}.")
+        enviar_telegram(f"⚠️ **SISTEMA:** Error de enlace con servidores para el evento de las {hora}.")
 
 # ==========================================
 # CRONOGRAMA OPERATIVO DEFINITIVO
 # ==========================================
 
 def iniciar_cronograma():
-    # Horarios Institucionales Reales
-    noticias = ["08:41", "10:01", "14:31"]
+    # Horarios reales solicitados
+    noticias = ["09:10", "10:01", "14:31"]
     
     for hora in noticias:
         hora_dt = datetime.strptime(hora, "%H:%M")
         
-        # Captura de Punto Cero (2 minutos antes de la noticia)
+        # Sincronización 2 minutos antes para asegurar el encendido en Render
         t_pos = (hora_dt - timedelta(minutes=2)).strftime("%H:%M")
         schedule.every().day.at(t_pos).do(protocolo_posicionamiento, hora)
         
-        # Alerta Preventiva Profesional
+        # Alerta preventiva 10 minutos antes
         t_pre = (hora_dt - timedelta(minutes=10)).strftime("%H:%M")
-        schedule.every().day.at(t_pre).do(enviar_telegram, f"📢 **ALERTA INSTITUCIONAL:** Proyección de volatilidad en 10 minutos ({hora} EST).")
+        schedule.every().day.at(t_pre).do(enviar_telegram, f"📢 **ALERTA INSTITUCIONAL:** Proyección de volatilidad en 10 min ({hora} EST).")
 
-    # Mensaje de inicio profesional
     mensaje_inicio = (
         f"🏛️ **LACER PRO DUAL INTELLIGENCE**\n"
         f"✅ Núcleo de Análisis: ACTIVO\n"
@@ -115,7 +109,7 @@ def iniciar_cronograma():
         f"🕒 Noticieros programados para hoy (EST):\n"
         f"• 08:31 | 10:01 | 14:31\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"💼 *Operativa bajo protocolos de riesgo dinámico.*"
+        f"💼 *Operativa institucional sin restricciones de horario.*"
     )
     enviar_telegram(mensaje_inicio)
 
@@ -125,4 +119,4 @@ if __name__ == "__main__":
     while True:
         schedule.run_pending()
         time.sleep(15)
-        
+    
