@@ -89,7 +89,7 @@ def protocolo_posicionamiento(hora):
 
 def iniciar_cronograma():
     # HORARIOS SOLICITADOS (Formato 24h)
-    noticias = ["11:40", "12:00", "12:15"]
+    noticias = ["12:18", "12:30", "13:01"]
     
     # Mensaje de arranque con hora actual confirmada
     hora_actual = datetime.now(ZONA_HORARIA).strftime("%H:%M:%S")
