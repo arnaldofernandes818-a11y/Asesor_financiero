@@ -93,7 +93,7 @@ def protocolo_posicionamiento(hora):
 
 def iniciar_cronograma():
     # Horarios Institucionales Reales
-    noticias = ["08:31", "10:01", "14:31"]
+    noticias = ["08:41", "10:01", "14:31"]
     
     for hora in noticias:
         hora_dt = datetime.strptime(hora, "%H:%M")
