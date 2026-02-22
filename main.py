@@ -8,7 +8,7 @@ from threading import Thread
 from flask import Flask
 
 # ==========================================
-# CONFIGURACIÓN DE CONECTIVIDAD PROFESIONAL
+# CONFIGURACIÓN PROFESIONAL
 # ==========================================
 TOKEN = "8138438253:AAGgdSgL67Kt1a0gEcm5NqYedsHKsa9UjN0"
 CHAT_ID = "7100105540"
@@ -33,28 +33,29 @@ def enviar_telegram(mensaje):
         pass
 
 # ==========================================
-# NÚCLEO DE INTELIGENCIA DE DATOS
+# GESTIÓN DE DATOS BINANCE -> TELEGRAM
 # ==========================================
 
-def obtener_precios():
-    try:
-        # Petición directa a Binance con timeout de seguridad
-        r_eur = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT", timeout=5).json()
-        r_oro = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT", timeout=5).json()
-        return float(r_eur['price']), float(r_oro['price'])
-    except:
-        return None, None
+def obtener_precios_seguros():
+    # Reintento triple para evitar el error de enlace
+    for i in range(3):
+        try:
+            r_eur = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT", timeout=10).json()
+            r_oro = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT", timeout=10).json()
+            return float(r_eur['price']), float(r_oro['price'])
+        except:
+            time.sleep(2)
+    return None, None
 
 def ejecutar_analisis_latigazo(precio_base_eur, precio_base_oro, hora_evento):
-    # ADN de la Estrategia: 120 segundos de espera tras el evento
+    # Espera institucional de 120 segundos
     time.sleep(120) 
-    precio_final_eur, precio_final_oro = obtener_precios()
+    p_final_eur, p_final_oro = obtener_precios_seguros()
     
-    if precio_final_eur and precio_base_eur:
-        var_eur = ((precio_final_eur - precio_base_eur) / precio_base_eur) * 100
-        var_oro = ((precio_final_oro - precio_base_oro) / precio_base_oro) * 100
+    if p_final_eur and precio_base_eur:
+        var_eur = ((p_final_eur - precio_base_eur) / precio_base_eur) * 100
+        var_oro = ((p_final_oro - precio_base_oro) / precio_base_oro) * 100
         
-        # Veredictos Institucionales
         v_eur = "🔹 EXPANSIÓN ALCISTA" if var_eur > 0.02 else "🔸 DISTRIBUCIÓN BAJISTA" if var_eur < -0.02 else "⚖️ ACUMULACIÓN"
         v_oro = "🔹 EXPANSIÓN ALCISTA" if var_oro > 0.05 else "🔸 DISTRIBUCIÓN BAJISTA" if var_oro < -0.05 else "⚖️ ACUMULACIÓN"
 
@@ -62,43 +63,35 @@ def ejecutar_analisis_latigazo(precio_base_eur, precio_base_oro, hora_evento):
             f"🏛️ **INFORME DE IMPACTO INSTITUCIONAL**\n"
             f"⏱️ Referencia: {hora_evento} EST\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🇪🇺 **ACTIVO: EURUSD**\n"
-            f"📈 Flujo: {v_eur}\n"
-            f"📊 Variación: {var_eur:+.4f}%\n\n"
-            f"🏆 **ACTIVO: XAUUSD (ORO)**\n"
-            f"📈 Flujo: {v_oro}\n"
-            f"📊 Variación: {var_oro:+.4f}%\n"
+            f"🇪🇺 **EURUSD:** {v_eur} ({var_eur:+.4f}%)\n"
+            f"🏆 **XAUUSD:** {v_oro} ({var_oro:+.4f}%)\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🧠 *Lacer Pro: Análisis Fundamental Completado.*"
+            f"💼 *Lacer Pro: Análisis de Liquidez Completado.*"
         )
         enviar_telegram(mensaje)
-    else:
-        enviar_telegram("⚠️ **FALLO CRÍTICO:** Pérdida de conexión con Binance durante el latigazo.")
 
 def protocolo_posicionamiento(hora):
-    p_eur, p_oro = obtener_precios()
+    p_eur, p_oro = obtener_precios_seguros()
     if p_eur and p_oro:
-        # Hilo separado para no bloquear el cronograma principal
         Thread(target=ejecutar_analisis_latigazo, args=(p_eur, p_oro, hora)).start()
     else:
-        enviar_telegram(f"⚠️ **SISTEMA:** Error de enlace para el evento de las {hora}. Reintentando...")
+        enviar_telegram(f"❌ **ERROR DE CONEXIÓN:** Binance no respondió a las {hora}.")
 
 # ==========================================
-# CRONOGRAMA OPERATIVO (EST)
+# CRONOGRAMA SINCRONIZADO
 # ==========================================
 
 def iniciar_cronograma():
-    # HORARIOS SOLICITADOS (Formato 24h)
-    noticias = ["12:18", "12:30", "13:01"]
+    # HORARIOS PARA LAS PRUEBAS DE HOY
+    noticias = ["07:00", "07:30", "08:00"]
     
-    # Mensaje de arranque con hora actual confirmada
     hora_actual = datetime.now(ZONA_HORARIA).strftime("%H:%M:%S")
-    enviar_telegram(f"🏛️ **SISTEMA ONLINE (MODO PRO)**\n🕒 Hora EST sincronizada: {hora_actual}\n📅 Eventos: 10:00, 10:40, 11:10")
+    enviar_telegram(f"🏛️ **SISTEMA SINCRONIZADO**\n🕒 Hora Nueva York: {hora_actual}\n✅ Vigilando: 07:00, 07:30, 08:00")
 
     for hora in noticias:
         # Alerta 10 min antes
         t_pre = (datetime.strptime(hora, "%H:%M") - timedelta(minutes=10)).strftime("%H:%M")
-        schedule.every().day.at(t_pre).do(enviar_telegram, f"📢 **ALERTA INSTITUCIONAL:** Proyección de volatilidad en 10 min ({hora} EST).")
+        schedule.every().day.at(t_pre).do(enviar_telegram, f"📢 **ALERTA:** Noticia en 10 min ({hora} EST).")
         
         # Punto Cero 2 min antes
         t_pos = (datetime.strptime(hora, "%H:%M") - timedelta(minutes=2)).strftime("%H:%M")
@@ -108,7 +101,6 @@ if __name__ == "__main__":
     Thread(target=run_web_server).start()
     iniciar_cronograma()
     while True:
-        # El loop usa la hora del sistema pero los 'at()' coinciden con la zona EST
         schedule.run_pending()
         time.sleep(15)
         
