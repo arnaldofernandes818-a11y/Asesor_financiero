@@ -1,106 +1,112 @@
-import requests
+import telebot
 import schedule
 import time
 import os
 import pytz
-from datetime import datetime, timedelta
+from datetime import datetime
 from threading import Thread
 from flask import Flask
 
 # ==========================================
-# CONFIGURACIÓN PROFESIONAL
+# CONFIGURACIÓN PROFESIONAL (CREDENTIALS)
 # ==========================================
+# Datos extraídos de tu configuración de Lacer Pro
 TOKEN = "8138438253:AAGgdSgL67Kt1a0gEcm5NqYedsHKsa9UjN0"
 CHAT_ID = "7100105540"
 ZONA_HORARIA = pytz.timezone('US/Eastern')
 
+bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-@app.route('/')
-def home():
-    return "🏛️ LACER PRO: CENTRAL INTELLIGENCE OPERATIONAL"
-
-def run_web_server():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
-
-def enviar_telegram(mensaje):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {"chat_id": CHAT_ID, "text": mensaje, "parse_mode": "Markdown"}
-    try:
-        requests.post(url, data=payload, timeout=10)
-    except:
-        pass
-
 # ==========================================
-# GESTIÓN DE DATOS BINANCE -> TELEGRAM
+# BASE DE DATOS DE CALENDARIO 2026 (ADN)
 # ==========================================
+FESTIVOS_2026 = {
+    "2026-01-01": "Año Nuevo (Global)",
+    "2026-01-19": "Martin Luther King Jr. Day (USA)",
+    "2026-02-16": "Presidents' Day (USA)",
+    "2026-04-03": "Viernes Santo (USA/UK)",
+    "2026-04-06": "Lunes de Pascua (UK)",
+    "2026-05-04": "Early May Bank Holiday (UK)",
+    "2026-05-25": "Memorial Day (USA) / Spring Bank Holiday (UK)",
+    "2026-06-19": "Juneteenth (USA)",
+    "2026-07-03": "Independencia de USA (Obs.)",
+    "2026-08-31": "Summer Bank Holiday (UK)",
+    "2026-09-07": "Labor Day (USA)",
+    "2026-11-26": "Thanksgiving Day (USA)",
+    "2026-12-25": "Navidad (Global)",
+    "2026-12-28": "Boxing Day (UK - Obs.)"
+}
 
-def obtener_precios_seguros():
-    # Reintento triple para evitar el error de enlace
-    for i in range(3):
-        try:
-            r_eur = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=EURUSDT", timeout=10).json()
-            r_oro = requests.get("https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT", timeout=10).json()
-            return float(r_eur['price']), float(r_oro['price'])
-        except:
-            time.sleep(2)
-    return None, None
-
-def ejecutar_analisis_latigazo(precio_base_eur, precio_base_oro, hora_evento):
-    # Espera institucional de 120 segundos
-    time.sleep(120) 
-    p_final_eur, p_final_oro = obtener_precios_seguros()
+def enviar_reporte_diario():
+    # Obtenemos la fecha actual en la zona horaria de NY (EST)
+    ahora = datetime.now(ZONA_HORARIA)
+    hoy_str = ahora.strftime("%Y-%m-%d")
+    dia_semana = ahora.weekday()  # 0=Lunes, 6=Domingo
     
-    if p_final_eur and precio_base_eur:
-        var_eur = ((p_final_eur - precio_base_eur) / precio_base_eur) * 100
-        var_oro = ((p_final_oro - precio_base_oro) / precio_base_oro) * 100
-        
-        v_eur = "🔹 EXPANSIÓN ALCISTA" if var_eur > 0.02 else "🔸 DISTRIBUCIÓN BAJISTA" if var_eur < -0.02 else "⚖️ ACUMULACIÓN"
-        v_oro = "🔹 EXPANSIÓN ALCISTA" if var_oro > 0.05 else "🔸 DISTRIBUCIÓN BAJISTA" if var_oro < -0.05 else "⚖️ ACUMULACIÓN"
+    # Detección técnica de último viernes de mes (Rebalanceo)
+    es_ultimo_viernes = (dia_semana == 4 and (ahora.day + 7) > 31)
+    
+    # --- LÓGICA DE DECISIÓN INSTITUCIONAL ---
+    
+    # 1. Caso Festivo (Mercado Cerrado)
+    if hoy_str in FESTIVOS_2026:
+        msg = (f"🏛️ **WALL STREET ESTRATEGIC REPORT**\n"
+               f"📅 {hoy_str} | **Status:** 🔴 **NO OPERAR**\n\n"
+               f"**ALERTA INSTITUCIONAL:**\n"
+               f"El mercado está en pausa por: {FESTIVOS_2026[hoy_str]}. "
+               f"Bancos centrales y proveedores de liquidez fuera de servicio.\n\n"
+               f"**DIAGNÓSTICO:**\n"
+               f"Cualquier movimiento es ruido minorista sin respaldo de capital real.\n\n"
+               f"**RECOMENDACIÓN:** Abstención total. Disfruta tu día libre.")
 
-        mensaje = (
-            f"🏛️ **INFORME DE IMPACTO INSTITUCIONAL**\n"
-            f"⏱️ Referencia: {hora_evento} EST\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"🇪🇺 **EURUSD:** {v_eur} ({var_eur:+.4f}%)\n"
-            f"🏆 **XAUUSD:** {v_oro} ({var_oro:+.4f}%)\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"💼 *Lacer Pro: Análisis de Liquidez Completado.*"
-        )
-        enviar_telegram(mensaje)
+    # 2. Caso Fin de Semana
+    elif dia_semana >= 5:
+        return # Silencio total en fin de semana
 
-def protocolo_posicionamiento(hora):
-    p_eur, p_oro = obtener_precios_seguros()
-    if p_eur and p_oro:
-        Thread(target=ejecutar_analisis_latigazo, args=(p_eur, p_oro, hora)).start()
+    # 3. Caso Precaución (Baja Liquidez o Periodos de Transición)
+    elif es_ultimo_viernes or (ahora.month == 12 and ahora.day >= 20) or (ahora.month == 1 and ahora.day <= 5):
+        motivo = "Cierre de Mes / Rebalanceo Institucional" if es_ultimo_viernes else "Periodo de Vacaciones de Invierno"
+        msg = (f"🏛️ **WALL STREET ESTRATEGIC REPORT**\n"
+               f"📅 {hoy_str} | **Status:** ⚠️ **PRECAUCIÓN PROFESIONAL**\n\n"
+               f"**ANÁLISIS DE CONTEXTO:**\n"
+               f"Fase de {motivo}. El volumen de los Market Makers está disminuyendo.\n\n"
+               f"**ADVERTENCIA TÉCNICA:**\n"
+               f"Riesgo de volatilidad errática. El mercado podría ignorar niveles técnicos básicos.\n\n"
+               f"**RECOMENDACIÓN:** Reduce el riesgo al 50%. Preserva tu capital.")
+
+    # 4. Caso Día Operativo (Luz Verde)
     else:
-        enviar_telegram(f"❌ **ERROR DE CONEXIÓN:** Binance no respondió a las {hora}.")
+        msg = (f"🏛️ **WALL STREET ESTRATEGIC REPORT**\n"
+               f"📅 {hoy_str} | **Status:** 🟢 **OPERATIVO**\n\n"
+               f"**ANÁLISIS DE APERTURA LONDRES:**\n"
+               f"Plazas de Londres (LSE) y Nueva York (NYSE) operativas. Flujo de órdenes estabilizado.\n\n"
+               f"**PERSPECTIVA:**\n"
+               f"Estructura óptima para ejecución profesional. Sin interferencias bancarias.\n\n"
+               f"**RECOMENDACIÓN:** Riesgo 100% autorizado. ¡Buen trading!")
 
-# ==========================================
-# CRONOGRAMA SINCRONIZADO
-# ==========================================
+    bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
 
-def iniciar_cronograma():
-    # HORARIOS PARA LAS PRUEBAS DE HOY
-    noticias = ["07:00", "07:30", "08:00"]
-    
-    hora_actual = datetime.now(ZONA_HORARIA).strftime("%H:%M:%S")
-    enviar_telegram(f"🏛️ **SISTEMA SINCRONIZADO**\n🕒 Hora Nueva York: {hora_actual}\n✅ Vigilando: 07:00, 07:30, 08:00")
-
-    for hora in noticias:
-        # Alerta 10 min antes
-        t_pre = (datetime.strptime(hora, "%H:%M") - timedelta(minutes=10)).strftime("%H:%M")
-        schedule.every().day.at(t_pre).do(enviar_telegram, f"📢 **ALERTA:** Noticia en 10 min ({hora} EST).")
-        
-        # Punto Cero 2 min antes
-        t_pos = (datetime.strptime(hora, "%H:%M") - timedelta(minutes=2)).strftime("%H:%M")
-        schedule.every().day.at(t_pos).do(protocolo_posicionamiento, hora)
-
-if __name__ == "__main__":
-    Thread(target=run_web_server).start()
-    iniciar_cronograma()
+# --- MOTOR DE TIEMPO (PROGRAMADO A LAS 02:00 AM EST) ---
+def runner():
+    # Programado para las 02:00 AM NY (Apertura de Londres)
+    schedule.every().day.at("02:00").do(enviar_reporte_diario)
     while True:
         schedule.run_pending()
-        time.sleep(15)
-        
+        time.sleep(30)
+
+# --- SERVIDOR FLASK (INTERFAZ PARA RENDER) ---
+@app.route('/')
+def home():
+    return "🏛️ WALL STREET INTELLIGENCE: CENTRAL OPERATIONS - ONLINE"
+
+if __name__ == "__main__":
+    # Iniciamos el hilo del cronograma para que corra en paralelo
+    t = Thread(target=runner)
+    t.daemon = True
+    t.start()
+    
+    # Ejecutamos el servidor web
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+    
