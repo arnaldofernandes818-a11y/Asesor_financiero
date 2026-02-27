@@ -77,26 +77,39 @@ def enviar_reporte_diario():
 
     bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
 
+# ==========================================
+# MOTOR DE TIEMPO (RELOJ ESTRATÉGICO)
+# ==========================================
 def runner():
-    schedule.every().day.at("02:00").do(enviar_reporte_diario)
+    # Se añade la ZONA_HORARIA para que 'schedule' sepa que las 02:00 son de New York (EST)
+    schedule.every().day.at("02:00", ZONA_HORARIA).do(enviar_reporte_diario)
+    
     while True:
         schedule.run_pending()
-        time.sleep(30)
+        time.sleep(1) # Revisión precisa cada segundo
 
 @app.route('/')
 def home():
     return "🏛️ LACER PRO: CENTRAL INTELLIGENCE OPERATIONS - ONLINE"
 
 if __name__ == "__main__":
+    # Registro de inicio en consola para auditoría de tiempo
+    ahora_est = datetime.now(ZONA_HORARIA).strftime("%Y-%m-%d %H:%M:%S")
+    print(f"--- SISTEMA INICIADO ---")
+    print(f"Hora actual configurada (EST): {ahora_est}")
+
     # Mensaje de confirmación de despliegue exitoso
     try:
         bot.send_message(CHAT_ID, "✅ **CENTINELA ESTRATÉGICO ACTIVADO**\n\nEl sistema ha sido purgado. Los reportes profesionales de Wall Street se enviarán diariamente a las **02:00 AM EST**.", parse_mode="Markdown")
-    except:
-        pass
+    except Exception as e:
+        print(f"Error al enviar mensaje de inicio: {e}")
 
+    # Ejecución de hilos
     t = Thread(target=runner)
     t.daemon = True
     t.start()
+    
+    # Servidor Flask para Webhook o Keep-Alive
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-    
+                               
